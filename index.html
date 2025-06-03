@@ -1,21 +1,149 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRUD de Tarefas</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>CRUD Admin com localStorage</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    #adminPanel { display: none; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #eee; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>CRUD de Tarefas</h1>
-    <form id="task-form">
-      <input type="text" id="task-input" placeholder="Digite uma tarefa" required />
-      <button type="submit">Adicionar</button>
-    </form>
-    <ul id="task-list"></ul>
+
+  <div id="loginForm">
+    <h2>Login do Administrador</h2>
+    <input type="text" id="username" placeholder="Usuário"><br><br>
+    <input type="password" id="password" placeholder="Senha"><br><br>
+    <button onclick="login()">Entrar</button>
+    <p id="loginError" style="color:red;"></p>
+    <p>admin 1234</p>
   </div>
 
-  <script src="script.js"></script>
+  <div id="adminPanel">
+    <h2>Painel do Administrador</h2>
+    <button onclick="showAddUserForm()">Adicionar Usuário</button>
+    <input type="text" id="searchInput" placeholder="Buscar por nome..." oninput="renderTable()" style="margin: 10px 0; width: 200px; padding: 5px;">
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Nome</th><th>Senha</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="userTableBody"></tbody>
+    </table>
+
+    <div id="userForm" class="hidden">
+      <h3 id="formTitle">Adicionar Usuário</h3>
+      <input type="text" id="name" placeholder="Nome"><br><br>
+      <input type="text" id="pass" placeholder="Senha"><br><br>
+      <button onclick="saveUser()">Salvar</button>
+      <button onclick="cancelUserForm()">Cancelar</button>
+    </div>
+  </div>
+
+  <script>
+    const adminUser = "admin";
+    const adminPass = "1234";
+
+    // Carrega os usuários do localStorage ou cria 4 iniciais
+    let users = JSON.parse(localStorage.getItem("users"));
+    if (!users) {
+      users = [
+        { name: "João", pass: "123" },
+        { name: "Maria", pass: "456" },
+        { name: "Carlos", pass: "abc" },
+        { name: "Ana", pass: "xyz" }
+      ];
+      localStorage.setItem("users", JSON.stringify(users));
+    }
+
+    let editingId = null;
+
+    function saveToLocalStorage() {
+      localStorage.setItem("users", JSON.stringify(users));
+    }
+
+    function login() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+
+      if (user === adminUser && pass === adminPass) {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'block';
+        renderTable();
+      } else {
+        document.getElementById('loginError').innerText = 'Credenciais inválidas!';
+      }
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('userTableBody');
+        const search = document.getElementById('searchInput').value.toLowerCase();
+
+        tbody.innerHTML = "";
+        users.forEach((u, i) => {
+            if (u.name.toLowerCase().includes(search)) {
+            const row = `<tr>
+                <td>${i + 1}</td>
+                <td>${u.name}</td>
+                <td>${u.pass}</td>
+                <td>
+                <button onclick="editUser(${i})">Editar</button>
+                <button onclick="deleteUser(${i})">Excluir</button>
+                </td>
+            </tr>`;
+            tbody.innerHTML += row;
+            }
+        });
+        }
+
+
+    function showAddUserForm() {
+      editingId = null;
+      document.getElementById('formTitle').innerText = "Adicionar Usuário";
+      document.getElementById('name').value = "";
+      document.getElementById('pass').value = "";
+      document.getElementById('userForm').classList.remove('hidden');
+    }
+
+    function cancelUserForm() {
+      document.getElementById('userForm').classList.add('hidden');
+    }
+
+    function saveUser() {
+      const name = document.getElementById('name').value;
+      const pass = document.getElementById('pass').value;
+      if (editingId === null) {
+        users.push({ name, pass });
+      } else {
+        users[editingId] = { name, pass };
+      }
+      saveToLocalStorage();
+      document.getElementById('userForm').classList.add('hidden');
+      renderTable();
+    }
+
+    function editUser(index) {
+      editingId = index;
+      document.getElementById('formTitle').innerText = "Editar Usuário";
+      document.getElementById('name').value = users[index].name;
+      document.getElementById('pass').value = users[index].pass;
+      document.getElementById('userForm').classList.remove('hidden');
+    }
+
+    function deleteUser(index) {
+      if (confirm("Tem certeza que deseja excluir este usuário?")) {
+        users.splice(index, 1);
+        saveToLocalStorage();
+        renderTable();
+      }
+    }
+  </script>
+
 </body>
 </html>
